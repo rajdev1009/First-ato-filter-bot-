@@ -28,7 +28,7 @@ Just send me any Movie or Series name, and I will find it for you.
     ABOUT_TXT = """
 **ℹ️ About Me**
 
-🤖 **Name:** Auto Filter Bot
+🤖 **Name:** pratishtha
 👨‍💻 **Creator:** {creator}
 📚 **Library:** Pyrogram
 💾 **Database:** MongoDB
@@ -38,10 +38,10 @@ Just send me any Movie or Series name, and I will find it for you.
 💰 **Premium Plans**
 
 🔹 **Plan A:** ₹10
-🔹 **Plan B:** ₹50
-🔹 **Plan C:** ₹90
-🔹 **Plan D:** ₹1666
-🔹 **Plan E:** ₹73727
+🔹 **Plan B:** ₹19
+🔹 **Plan C:** ₹28
+🔹 **Plan D:** ₹50
+🔹 **Plan E:** ₹80
 
 ✅ **Benefits:**
 - Direct Links (No Shortener)
