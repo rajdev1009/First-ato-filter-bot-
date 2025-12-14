@@ -1,28 +1,30 @@
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# ───────────── TELEGRAM ─────────────
+API_ID = int(os.getenv("API_ID", "0"))
+API_HASH = os.getenv("API_HASH", "")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 
-class Config:
-    API_ID = int(os.environ.get("API_ID", "0"))
-    API_HASH = os.environ.get("API_HASH", "")
-    BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
+# ───────────── DATABASE ─────────────
+MONGO_URI = os.getenv("MONGO_URI", "")
+DB_NAME = "AutoFilterBot"
 
-    MONGO_DB_URI = os.environ.get("MONGO_DB_URI", "")
+# ───────────── ADMINS ─────────────
+# Example: ADMINS="123456789 987654321"
+ADMINS = list(
+    map(
+        int,
+        os.getenv("ADMINS", "").split()
+    )
+)
 
-    # Channel IDs (Auto Fix -100)
-    DB_CHANNEL = int(os.environ.get("DB_CHANNEL", "0"))
-    LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "0"))
-    UPDATE_CHANNEL = int(os.environ.get("UPDATE_CHANNEL", "0")) 
+# ───────────── BOT SETTINGS ─────────────
+RESULTS_PER_PAGE = 10          # pagination limit
+AUTO_DELETE_TIME = 600         # 10 minutes
 
-    # Links
-    UPDATE_CHANNEL_LINK = "https://t.me/+YZ7qQ1Ahx-M1MDdl"
-    MOVIE_GROUP_LINK = "https://t.me/+mgQzW_pjxT1hODI1"
-    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "raj_dev_01") 
+# ───────────── IMDB / OMDB ─────────────
+OMDB_API_KEY = os.getenv("OMDB_API_KEY", "")
 
-    # Admin
-    ADMINS = [int(x) for x in os.environ.get("ADMINS", "0").split()]
-
-    # Shortener (Optional)
-    SHORTENER_API = os.environ.get("SHORTENER_API", "")
-    SHORTENER_URL = os.environ.get("SHORTENER_URL", "") 
+# ───────────── FORCE SUBSCRIBE ─────────────
+# Example: FORCE_SUB="YourChannelUsername"
+FORCE_SUB = os.getenv("FORCE_SUB", "")
