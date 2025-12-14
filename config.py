@@ -13,9 +13,9 @@ class Config:
     MONGO_DB_URI = os.environ.get("MONGO_DB_URI", "")
 
     # Channels (must start with -100)
-    DB_CHANNEL = int(os.environ.get("DB_CHANNEL", "0")) # Files here
-    LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "0")) # Logs here
-    PREMIUM_LOG_CHANNEL = int(os.environ.get("PREMIUM_LOG_CHANNEL", "0")) # Payment Proofs
+    DB_CHANNEL = int(os.environ.get("DB_CHANNEL", "-1002795064458")) # Files here
+    LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "-1002746487551")) # Logs here
+    PREMIUM_LOG_CHANNEL = int(os.environ.get("PREMIUM_LOG_CHANNEL", "1002870973266")) # Payment Proofs
 
     # Admin
     ADMINS = [int(x) for x in os.environ.get("ADMINS", "").split()]
