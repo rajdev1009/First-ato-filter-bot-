@@ -21,6 +21,16 @@ class Bot(Client):
     async def start(self):
         await super().start()
         print("✅ Raj HD Movies Bot Started!")
+        
+        # 🔥 PERMANENT FIX FOR PEER ID INVALID 🔥
+        try:
+            print("🔄 Refreshing Channel Cache...")
+            # Hum zabardasti DB Channel ka data mangenge taaki cache ban jaye
+            await self.get_chat(Config.DB_CHANNEL)
+            print("✅ DB Channel Connected Successfully!")
+        except Exception as e:
+            print(f"❌ Failed to connect to DB Channel: {e}")
+            print("⚠️ Make sure Bot is Admin in DB Channel!")
 
     async def stop(self, *args):
         await super().stop()
