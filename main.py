@@ -1,10 +1,6 @@
 import asyncio
-import logging
 from pyrogram import Client
 from config import API_ID, API_HASH, BOT_TOKEN
-from database import init_db
-
-logging.basicConfig(level=logging.INFO)
 
 app = Client(
     "AutoFilterBot",
@@ -15,10 +11,9 @@ app = Client(
 )
 
 async def main():
-    async with app:
-        await init_db()
-        print("✅ Raj HD Movies Bot Started!")
-        await asyncio.Event().wait()  # keep bot alive
+    await app.start()
+    print("✅ Bot Started Successfully")
+    await asyncio.Event().wait()
 
 if __name__ == "__main__":
     asyncio.run(main())
