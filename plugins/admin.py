@@ -34,7 +34,7 @@ async def stats(client, message):
 @Client.on_message(filters.command("shortener") & filters.user(Config.ADMINS))
 async def toggle_short(client, message):
     try:
-        state = message.text.split()[1].lower() == 'on'
+        state = message.text.split()[1].lower() == 'off'
         await db.update_setting('shortener', state)
         await message.reply(f"Shortener: {state}")
     except: await message.reply("/shortener on/off")
