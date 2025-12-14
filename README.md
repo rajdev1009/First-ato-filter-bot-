@@ -11,11 +11,15 @@
 ### 📂 File Structure
 
 ```text
-📂 MyFilterBot
- ┣ 📂 plugins
- ┃ ┣ 📜 commands.py
- ┃ ┗ 📜 filter.py
- ┣ 📜 config.py
- ┣ 📜 database.py
- ┣ 📜 main.py
- ┗ 📜 requirements.txt
+autofilter-bot/
+│
+├── main.py
+├── config.py
+├── database.py
+├── utils.py
+├── requirements.txt
+│
+└── plugins/
+    ├── commands.py
+    ├── filter.py
+    └── admin.py
