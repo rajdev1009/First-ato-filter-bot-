@@ -8,7 +8,7 @@
 
 <hr>
 
-raj_hdmovies_bot/
+##raj_hdmovies_bot/
 │
 ├── main.py                # Bot startup (ProBot)
 ├── config.py              # Config + env
