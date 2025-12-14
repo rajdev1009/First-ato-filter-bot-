@@ -39,7 +39,7 @@ async def cb_handler(client, callback):
     
     if data == "premium_price":
         # 🟢 EDIT THIS: अपना टेलीग्राम यूजरनेम यहाँ लिखें (Quotes के अंदर)
-        admin_username = "@raj_dev_01" 
+        admin_username = "raj_dev_01" 
         
         btn = [
             [InlineKeyboardButton("👤 Contact Admin / Send Proof", url=f"https://t.me/{admin_username}")],
@@ -76,8 +76,8 @@ async def cb_handler(client, callback):
         text = Script.START_TXT.format(mention=callback.from_user.mention)
         buttons = InlineKeyboardMarkup([
             [InlineKeyboardButton("🔥 Premium Price", callback_data="premium_price"),
-             InlineKeyboardButton("🎥 Movie Group", url="https://t.me/Raj_Hd_movies")],
-            [InlineKeyboardButton("📢 Update Channel", url="https://t.me/YOUR_CHANNEL_LINK"),
+             InlineKeyboardButton("🎥 Movie Group", url="https://t.me/+u4cmm3JmIrFlNzZl")],
+            [InlineKeyboardButton("📢 Update Channel", url="https://t.me/+YZ7qQ1Ahx-M1MDdl"),
              InlineKeyboardButton("⚙ Settings", callback_data="settings")],
             [InlineKeyboardButton("ℹ About", callback_data="about"),
              InlineKeyboardButton("🆘 Help", callback_data="help")]
