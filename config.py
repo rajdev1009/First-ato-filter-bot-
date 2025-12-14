@@ -18,9 +18,9 @@ class Config:
     UPDATE_CHANNEL = int(os.environ.get("UPDATE_CHANNEL", "0"))
 
     # Links
-    UPDATE_CHANNEL_LINK = "https://t.me/YOUR_UPDATE_LINK"
-    MOVIE_GROUP_LINK = "https://t.me/Raj_Hd_movies"
-    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "RajHDAdmin") # Bina @ ke
+    UPDATE_CHANNEL_LINK = "https://t.me/+YZ7qQ1Ahx-M1MDdl"
+    MOVIE_GROUP_LINK = "https://t.me/+u4cmm3JmIrFlNzZl"
+    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "raj_dev_01") # Bina @ ke
 
     # Admin ID
     ADMINS = [int(x) for x in os.environ.get("ADMINS", "0").split()]
