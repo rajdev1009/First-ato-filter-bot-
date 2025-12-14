@@ -11,19 +11,16 @@ class Database:
         self.files = self.db.files
         self.settings = self.db.settings
 
-    # --- User Management ---
+    # --- Users ---
     async def add_user(self, id, name):
-        user = await self.col.find_one({'id': id})
-        if not user:
-            await self.col.insert_one({'id': id, 'name': name, 'is_premium': False, 'expiry': None})
-            return True
-        return False
+        if not await self.col.find_one({'id': id}):
+            await self.col.insert_one({'id': id, 'name': name, 'is_premium': False})
 
     async def is_user_premium(self, id):
         user = await self.col.find_one({'id': id})
         if user and user.get('is_premium'):
             if user.get('expiry') and user['expiry'] < datetime.datetime.now():
-                await self.remove_premium(id)
+                await self.col.update_one({'id': id}, {'$set': {'is_premium': False}})
                 return False
             return True
         return False
@@ -32,18 +29,18 @@ class Database:
         expiry = datetime.datetime.now() + datetime.timedelta(days=int(days))
         await self.col.update_one({'id': id}, {'$set': {'is_premium': True, 'expiry': expiry}}, upsert=True)
 
-    async def remove_premium(self, id):
-        await self.col.update_one({'id': id}, {'$set': {'is_premium': False, 'expiry': None}})
-
-    # --- File Management ---
+    # --- Files ---
     async def save_file(self, message):
         try:
             file_id = message.id
+            # Prevent Duplicates
             if await self.files.find_one({'file_id': file_id}):
                 return False 
             
             media = message.document or message.video or message.audio
-            file_name = message.caption or (media.file_name if media else "Unknown")
+            if not media: return False
+            
+            file_name = message.caption or media.file_name or "Unknown"
             
             await self.files.insert_one({
                 'file_name': file_name.lower(),
@@ -52,9 +49,7 @@ class Database:
                 'file_type': 'video' if message.video else 'document'
             })
             return True
-        except Exception as e:
-            print(f"Save Error: {e}")
-            return False
+        except: return False
 
     async def search_files(self, query):
         regex = {"$regex": query, "$options": "i"}
@@ -70,12 +65,11 @@ class Database:
     async def get_settings(self):
         settings = await self.settings.find_one({'id': 'master'})
         if not settings:
-            default = {'shortener': False, 'pm_search': True}
-            await self.settings.insert_one({'id': 'master', **default})
-            return default
+            await self.settings.insert_one({'id': 'master', 'shortener': False})
+            return {'shortener': False}
         return settings
 
-    async def update_setting(self, key, value):
-        await self.settings.update_one({'id': 'master'}, {'$set': {key: value}}, upsert=True)
+    async def update_shortener(self, status):
+        await self.settings.update_one({'id': 'master'}, {'$set': {'shortener': status}}, upsert=True)
 
-db = Database(Config.MONGO_DB_URI, "Raj_HD_Bot")
+db = Database(Config.MONGO_DB_URI, "Raj_Pro_Bot_Final")
