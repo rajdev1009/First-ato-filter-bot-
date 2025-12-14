@@ -5,6 +5,7 @@ from aiohttp import web
 from config import Config
 
 routes = web.RouteTableDef()
+
 @routes.get("/", allow_head=True)
 async def root_route_handler(request):
     return web.json_response({"status": "running"})
@@ -16,18 +17,18 @@ async def web_server():
 
 class Bot(Client):
     def __init__(self):
-        super().__init__("ProBot", api_id=Config.API_ID, api_hash=Config.API_HASH, bot_token=Config.BOT_TOKEN, plugins=dict(root="plugins"))
+        super().__init__(
+            "ProBot",
+            api_id=Config.API_ID,
+            api_hash=Config.API_HASH,
+            bot_token=Config.BOT_TOKEN,
+            plugins=dict(root="plugins")
+        )
 
     async def start(self):
         await super().start()
         print("✅ Raj HD Movies Bot Started!")
-        # 🔥 Auto Connect System 🔥
-        try:
-            print("🔄 Connecting to DB Channel...")
-            await self.get_chat(Config.DB_CHANNEL)
-            print("✅ DB Channel Connected!")
-        except Exception as e:
-            print(f"❌ Failed to connect: {e}")
+        # ❌ DB channel ko startup pe touch mat karo
 
     async def stop(self, *args):
         await super().stop()
@@ -42,6 +43,5 @@ async def main():
     await bot.stop()
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
     
