@@ -29,8 +29,8 @@ async def cb_handler(client, callback):
         # Strictly used figures from request
         prices = (
             "💰 **Premium Plans**\n"
-            "Plan A: ₹10\nPlan B: ₹50\nPlan C: ₹90\n"
-            "Plan D: ₹1666\nPlan E: ₹73727\n\n"
+            "Plan A: ₹10\nPlan B: ₹19\nPlan C: ₹29\n"
+            "Plan D: ₹50\nPlan E: ₹70\n\n"
             "Benefits: No Ads, Direct Links, Priority Support.\n"
             "Contact Admin to buy."
         )
