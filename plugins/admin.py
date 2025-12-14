@@ -1,131 +1,69 @@
 import asyncio
 from pyrogram import Client, filters
-from pyrogram.errors import FloodWait, PeerIdInvalid
+from pyrogram.errors import FloodWait
+from config import Config
+from database import db
 
-from database import (
-    add_file,
-    ban_user,
-    unban_user,
-    get_stats,
-    set_shortener
-)
-from config import ADMINS
+def get_progress(current, total):
+    pct = (current / total) * 100
+    filled = int(pct / 10)
+    bar = '▓' * filled + '░' * (10 - filled)
+    return f"{bar} {round(pct, 1)}%"
 
-
-# ───────────── ADMIN FILTER ─────────────
-def admin_only(_, __, message):
-    return message.from_user and message.from_user.id in ADMINS
-
-
-admin_filter = filters.create(admin_only)
-
-
-# ───────────── INDEX COMMAND ─────────────
-@Client.on_message(filters.command("index") & admin_filter)
-async def index_files(client, message):
-    if len(message.command) != 2:
-        return await message.reply_text("❌ Usage:\n`/index channel_username_or_id`")
-
-    channel = message.command[1]
-    msg = await message.reply_text("🔍 Indexing started...")
-
-    indexed = 0
-
+@Client.on_message(filters.command("index") & filters.user(Config.ADMINS))
+async def index(client, message):
+    status = await message.reply("🔄 **Connecting...**")
     try:
-        async for m in client.get_messages(channel, limit=100000):
-            if not m.document and not m.video:
-                continue
+        last_msg = await client.send_message(Config.DB_CHANNEL, "🤖 Index Check")
+        total_ids = last_msg.id
+        await last_msg.delete()
+    except Exception as e:
+        return await status.edit(f"❌ Error: Cannot connect to DB Channel.\nTrace: `{e}`")
 
-            file = m.document or m.video
+    await status.edit(f"✅ Connection OK!\n📥 Total: `{total_ids}`\n🚀 **Starting Smooth Index...**")
 
-            file_data = {
-                "file_id": file.file_id,
-                "file_name": file.file_name or "No Name",
-                "file_size": file.file_size,
-                "chat_id": m.chat.id,
-                "message_id": m.id
-            }
+    current_id = total_ids
+    saved_count = 0
+    batch_size = 50 
 
-            await add_file(file_data)
-            indexed += 1
-
-    except FloodWait as e:
-        await asyncio.sleep(e.value)
-    except PeerIdInvalid:
-        return await msg.edit("❌ Invalid channel / bot not added")
-
-    await msg.edit(f"✅ Indexing completed\n📁 Files indexed: `{indexed}`")
-
-
-# ───────────── STATS ─────────────
-@Client.on_message(filters.command("stats") & admin_filter)
-async def stats_cmd(client, message):
-    stats = await get_stats()
-
-    await message.reply_text(
-        "📊 **Bot Stats**\n\n"
-        f"👥 Users: `{stats['users']}`\n"
-        f"📁 Files: `{stats['files']}`"
-    )
-
-
-# ───────────── BAN USER ─────────────
-@Client.on_message(filters.command("ban") & admin_filter)
-async def ban_cmd(client, message):
-    if not message.reply_to_message:
-        return await message.reply_text("Reply to user message")
-
-    user_id = message.reply_to_message.from_user.id
-    await ban_user(user_id)
-    await message.reply_text("🚫 User banned")
-
-
-# ───────────── UNBAN USER ─────────────
-@Client.on_message(filters.command("unban") & admin_filter)
-async def unban_cmd(client, message):
-    if not message.reply_to_message:
-        return await message.reply_text("Reply to user message")
-
-    user_id = message.reply_to_message.from_user.id
-    await unban_user(user_id)
-    await message.reply_text("✅ User unbanned")
-
-
-# ───────────── SHORTENER ON/OFF ─────────────
-@Client.on_message(filters.command("shortener") & admin_filter)
-async def shortener_cmd(client, message):
-    if len(message.command) != 2:
-        return await message.reply_text("Usage: `/shortener on|off`")
-
-    value = message.command[1].lower()
-
-    if value == "on":
-        await set_shortener(True)
-        await message.reply_text("🔗 Shortener ENABLED")
-    elif value == "off":
-        await set_shortener(False)
-        await message.reply_text("🔗 Shortener DISABLED")
-    else:
-        await message.reply_text("Use on / off")
-
-
-# ───────────── BROADCAST ─────────────
-@Client.on_message(filters.command("broadcast") & admin_filter)
-async def broadcast_cmd(client, message):
-    if not message.reply_to_message:
-        return await message.reply_text("Reply to message to broadcast")
-
-    from database import users_col
-
-    sent = 0
-    async for user in users_col.find({}):
+    while current_id > 0:
         try:
-            await message.reply_to_message.copy(user["_id"])
-            sent += 1
-            await asyncio.sleep(0.05)
+            ids = list(range(current_id, max(0, current_id - batch_size), -1))
+            messages = await client.get_messages(Config.DB_CHANNEL, ids)
+
+            for msg in messages:
+                if msg and not msg.empty and (msg.document or msg.video):
+                    if await db.save_file(msg): saved_count += 1
+            
+            current_id -= batch_size
+
+            if current_id % 200 == 0:
+                bar = get_progress(total_ids - current_id, total_ids)
+                try: await status.edit(f"🔄 **Indexing...**\n{bar}\n📂 Saved: `{saved_count}`")
+                except: pass
+            
+            await asyncio.sleep(1.5) 
+
         except FloodWait as e:
             await asyncio.sleep(e.value)
-        except Exception:
-            pass
+        except:
+            current_id -= batch_size
 
-    await message.reply_text(f"📣 Broadcast sent to `{sent}` users")
+    await status.edit(f"✅ **Indexing Completed!**\n💾 Saved: `{saved_count}` files.")
+
+@Client.on_message(filters.command("shortener") & filters.user(Config.ADMINS))
+async def shortener_toggle(client, message):
+    try:
+        state = message.text.split()[1].lower() == "on"
+        await db.update_shortener(state)
+        await message.reply(f"Shortener: **{'ON' if state else 'OFF'}**")
+    except: await message.reply("/shortener on | off")
+
+@Client.on_message(filters.command("add_premium") & filters.user(Config.ADMINS))
+async def add_premium(client, message):
+    try:
+        _, uid, days = message.text.split()
+        await db.add_premium(int(uid), int(days))
+        await message.reply(f"✅ Premium added.")
+    except: await message.reply("/add_premium ID DAYS")
+        
