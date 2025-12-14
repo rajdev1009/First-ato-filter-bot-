@@ -12,19 +12,20 @@ class Config:
     # Database
     MONGO_DB_URI = os.environ.get("MONGO_DB_URI", "")
 
-    # Channels (Integer Fix)
+    # Channels (Integer format)
     DB_CHANNEL = int(os.environ.get("DB_CHANNEL", "0"))
     LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "0"))
     UPDATE_CHANNEL = int(os.environ.get("UPDATE_CHANNEL", "0"))
 
     # Links
-    UPDATE_CHANNEL_LINK = "https://t.me/+YZ7qQ1Ahx-M1MDdl"
-    MOVIE_GROUP_LINK = "https://t.me/+u4cmm3JmIrFlNzZl"
-    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "raj_dev_01") # Bina @ ke
+    UPDATE_CHANNEL_LINK = os.environ.get("UPDATE_CHANNEL_LINK", "https://t.me/your_update_channel")
+    MOVIE_GROUP_LINK = os.environ.get("MOVIE_GROUP_LINK", "https://t.me/your_movie_group")
+    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "raj_dev_01")  # Bina @ ke
 
-    # Admin ID
+    # Admins
     ADMINS = [int(x) for x in os.environ.get("ADMINS", "0").split()]
 
-    # Shortener (Optional)
+    # Shortener
     SHORTENER_API = os.environ.get("SHORTENER_API", "")
-    SHORTENER_URL = os.environ.get("SHORTENER_URL", "") 
+    SHORTENER_URL = os.environ.get("SHORTENER_URL", "")
+    
