@@ -16,11 +16,11 @@ async def web_server():
 
 class Bot(Client):
     def __init__(self):
-        super().__init__("AutoFilterBot", api_id=Config.API_ID, api_hash=Config.API_HASH, bot_token=Config.BOT_TOKEN, plugins=dict(root="plugins"))
+        super().__init__("ProBot", api_id=Config.API_ID, api_hash=Config.API_HASH, bot_token=Config.BOT_TOKEN, plugins=dict(root="plugins"))
 
     async def start(self):
         await super().start()
-        print("✅ Bot Started! Created for Raj HD Movies")
+        print("✅ Raj HD Movies Bot Started!")
 
     async def stop(self, *args):
         await super().stop()
@@ -37,3 +37,4 @@ async def main():
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
+    
