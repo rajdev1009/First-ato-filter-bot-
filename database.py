@@ -1,5 +1,6 @@
 import motor.motor_asyncio
 import datetime
+from bson.objectid import ObjectId  # 👈 यह लाइन बहुत जरुरी है
 from config import Config
 
 class Database:
@@ -22,7 +23,7 @@ class Database:
         user = await self.col.find_one({'id': id})
         if user and user.get('is_premium'):
             if user.get('expiry') and user['expiry'] < datetime.datetime.now():
-                await self.remove_premium(id) # Expiry Check
+                await self.remove_premium(id)
                 return False
             return True
         return False
@@ -34,26 +35,21 @@ class Database:
     async def remove_premium(self, id):
         await self.col.update_one({'id': id}, {'$set': {'is_premium': False, 'expiry': None}})
 
-    # --- File Management ---
+    # --- File Management (Fixed for Direct Send) ---
     async def save_file(self, message):
         try:
             file_id = message.id
-            # Duplicate Check
             if await self.files.find_one({'file_id': file_id}):
                 return False 
             
             media = message.document or message.video or message.audio
             file_name = message.caption or (media.file_name if media else "Unknown")
             
-            # Direct Link Logic
-            channel_id_str = str(Config.DB_CHANNEL).replace("-100", "")
-            link = f"https://t.me/c/{channel_id_str}/{message.id}"
-            
             await self.files.insert_one({
                 'file_name': file_name.lower(),
-                'file_id': file_id,
+                'file_id': file_id, # Message ID in DB Channel
                 'caption': message.caption,
-                'link': link
+                'file_type': 'video' if message.video else 'document'
             })
             return True
         except Exception as e:
@@ -62,7 +58,15 @@ class Database:
 
     async def search_files(self, query):
         regex = {"$regex": query, "$options": "i"}
+        # हम _id भी मांगेंगे ताकि बटन में डाल सकें
         return await self.files.find({"file_name": regex}).limit(10).to_list(length=10)
+
+    # 👇 यह नया फंक्शन है फाइल भेजने के लिए
+    async def get_file(self, _id):
+        try:
+            return await self.files.find_one({"_id": ObjectId(_id)})
+        except:
+            return None
 
     # --- Settings ---
     async def get_settings(self):
@@ -76,5 +80,4 @@ class Database:
     async def update_setting(self, key, value):
         await self.settings.update_one({'id': 'master'}, {'$set': {key: value}}, upsert=True)
 
-# No Space in Name
 db = Database(Config.MONGO_DB_URI, "Raj_HD_Bot")
