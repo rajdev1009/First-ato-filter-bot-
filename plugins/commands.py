@@ -26,14 +26,13 @@ async def start(client, message):
 async def cb_handler(client, callback):
     data = callback.data
     
-    # 👇 MAIN FILE SENDING LOGIC
     if data.startswith("file_"):
         try:
             file_id = data.split("_")[1]
             file = await db.get_file(file_id)
             
             if not file: 
-                return await callback.answer("❌ File Not Found (Deleted from DB)", show_alert=True)
+                return await callback.answer("❌ File Not Found (Deleted?)", show_alert=True)
 
             await callback.answer("📂 Sending File...", show_alert=False)
 
@@ -46,7 +45,7 @@ async def cb_handler(client, callback):
                 [InlineKeyboardButton("💬 Join Movie Group", url=Config.MOVIE_GROUP_LINK)]
             ])
             
-            # 🔥 CRITICAL FIX: Direct Copy (No Forward)
+            # 🔥 Send File Directly
             sent = await client.copy_message(
                 chat_id=callback.message.chat.id,
                 from_chat_id=Config.DB_CHANNEL,
@@ -55,16 +54,16 @@ async def cb_handler(client, callback):
                 reply_markup=btns
             )
             
-            # Log Success
-            print(f"File Sent to {callback.from_user.first_name}")
+            # Auto Delete Task
             asyncio.create_task(auto_delete(sent, 900))
 
         except Exception as e:
-            # 🔴 Error Reporting 🔴
+            # 🛑 Agar file na jaye, to Error batao
             print(f"Send Error: {e}")
-            await callback.answer(f"⚠️ Failed to send file!\nError: {e}", show_alert=True)
+            await callback.answer(f"⚠️ apology: {e}", show_alert=True)
 
     elif data == "premium_price":
+        # Username fix (Bina @ ke Config se lega)
         url = f"https://t.me/{Config.ADMIN_USERNAME}"
         btn = [[InlineKeyboardButton("👤 Contact Admin", url=url)], [InlineKeyboardButton("🔙 Back", callback_data="start")]]
         await callback.message.edit_text(Script.PREMIUM_TXT, reply_markup=InlineKeyboardMarkup(btn))
