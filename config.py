@@ -14,7 +14,7 @@ class Config:
 
     # Channels (Auto-Convert to Integer)
     # अगर आपने गलती से "" लगा दिया है, तो यह उसे हटाकर नंबर बना देगा
-    DB_CHANNEL = int(os.environ.get("DB_CHANNEL", "-1002795064458"))
+    DB_CHANNEL = int(os.environ.get("DB_CHANNEL", ""))
     LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "-1002746487551"))
     PREMIUM_LOG_CHANNEL = int(os.environ.get("PREMIUM_LOG_CHANNEL", "-1002746487551"))
 
