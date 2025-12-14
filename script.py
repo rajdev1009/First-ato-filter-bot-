@@ -1,21 +1,19 @@
 class Script:
     START_TXT = """
 👋 **Hello {mention}!**
-
-I am your **Auto Filter Bot**. 
-Type any movie name to search.
-
-✅ **Auto Delete:** Files deleted in 15 mins.
-✅ **Fast Speed:** No delays.
-"""
+Welcome to **mr Dev Movies**.
+Search for any movie to download instantly.
+    """
     HELP_TXT = """
-**🆘 How to Use?**
-1. Search movie name.
-2. Click the button.
-3. Join our channels to support us.
-"""
+**Using the Bot:**
+1. Type Movie Name.
+2. Click Button.
+3. File will auto-delete in 15 mins.
+    """
     PREMIUM_TXT = """
-💰 **Premium Plans**
-Contact Admin for rates.
-"""
+💎 **Premium Rates:**
+10 days : ₹19
+1 Month: ₹29 
+1 Year: ₹999
+    """
     
