@@ -8,18 +8,18 @@
 
 <hr>
 
-### 📂 File Structure
-
-```text
-autofilter-bot/
+raj_hdmovies_bot/
 │
-├── main.py
-├── config.py
-├── database.py
-├── utils.py
-├── requirements.txt
-│
+├── main.py                # Bot startup (ProBot)
+├── config.py              # Config + env
+├── database.py            # MongoDB async logic
+├── filter.py              # Auto filter + save + logs
+├── admin.py               # Admin commands (premium add)
+├── commands.py            # Start/help/premium
+├── indexer.py             # USER ACCOUNT indexing script
+├── requirements.txt       # Dependencies
 └── plugins/
-    ├── commands.py
     ├── filter.py
-    └── admin.py
+    ├── admin.py
+    └── commands.py
+    
