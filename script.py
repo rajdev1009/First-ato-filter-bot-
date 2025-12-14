@@ -2,38 +2,20 @@ class Script:
     START_TXT = """
 👋 **Hello {mention}!**
 
-I am an **Auto Filter Bot**. 
-Just send me any Movie or Series name.
+I am your **Auto Filter Bot**. 
+Type any movie name to search.
 
-**Features:**
-✅ Auto Filter Search
-✅ Auto Save Files
-✅ Premium System
+✅ **Auto Delete:** Files deleted in 15 mins.
+✅ **Fast Speed:** No delays.
 """
-
     HELP_TXT = """
 **🆘 How to Use?**
-1. **Search:** Type movie name.
-2. **Premium:** Use /premium.
-3. **Admin:** Use /index to save files.
+1. Search movie name.
+2. Click the button.
+3. Join our channels to support us.
 """
-
-    ABOUT_TXT = """
-**ℹ️ About Me**
-🤖 **Name:** Auto Filter Bot
-👨‍💻 **Creator:** {creator}
-📚 **Library:** Pyrogram
-"""
-
     PREMIUM_TXT = """
 💰 **Premium Plans**
-
-🔹 **Plan A:** ₹10
-🔹 **Plan B:** ₹50
-🔹 **Plan C:** ₹90
-🔹 **Plan D:** ₹1666
-🔹 **Plan E:** ₹73727
-
-✅ **Benefits:** Direct Links, No Ads.
+Contact Admin for rates.
 """
     
