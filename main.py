@@ -1,4 +1,3 @@
-import os
 import asyncio
 from pyrogram import Client, idle
 from aiohttp import web
@@ -24,14 +23,6 @@ class Bot(Client):
             bot_token=Config.BOT_TOKEN,
             plugins=dict(root="plugins")
         )
-
-    async def start(self):
-        await super().start()
-        print("✅ Raj HD Movies Bot Started!")
-        # ❌ DB channel ko startup pe touch mat karo
-
-    async def stop(self, *args):
-        await super().stop()
 
 async def main():
     bot = Bot()
