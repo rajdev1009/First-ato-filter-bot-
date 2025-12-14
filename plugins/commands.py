@@ -17,7 +17,7 @@ async def start(client, message):
         [InlineKeyboardButton("📢 Updates", url=Config.UPDATE_CHANNEL_LINK), 
          InlineKeyboardButton("🎥 Group", url=Config.MOVIE_GROUP_LINK)],
         [InlineKeyboardButton("🆘 Help", callback_data="help"),
-         InlineKeyboardButton("⚡ Developer", url="https://t.me/Raj_Hd_movies")]
+         InlineKeyboardButton("⚡ Developer", url="https://t.me/raj_dev_01")]
     ])
     await message.reply_text(Script.START_TXT.format(mention=message.from_user.mention), reply_markup=buttons)
 
