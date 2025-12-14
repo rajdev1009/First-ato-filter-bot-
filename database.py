@@ -18,25 +18,23 @@ class Database:
     async def is_user_premium(self, id):
         user = await self.col.find_one({'id': id})
         if user and user.get('is_premium'):
-            if user.get('expiry') and user['expiry'] < datetime.datetime.now():
+            if user.get('expiry') and user['expiry'] < datetime.datetime.utcnow():
                 await self.col.update_one({'id': id}, {'$set': {'is_premium': False}})
                 return False
             return True
         return False
 
     async def add_premium(self, id, days):
-        expiry = datetime.datetime.now() + datetime.timedelta(days=int(days))
+        expiry = datetime.datetime.utcnow() + datetime.timedelta(days=int(days))
         await self.col.update_one({'id': id}, {'$set': {'is_premium': True, 'expiry': expiry}}, upsert=True)
 
     async def save_file(self, message):
         try:
             file_id = message.id
             if await self.files.find_one({'file_id': file_id}): return False 
-            
             media = message.document or message.video or message.audio
             if not media: return False
-            file_name = message.caption or media.file_name or "Unknown"
-            
+            file_name = message.caption or getattr(media, "file_name", "Unknown")
             await self.files.insert_one({
                 'file_name': file_name.lower(),
                 'file_id': file_id,
