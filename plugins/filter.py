@@ -1,12 +1,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from database import (
-    search_files,
-    count_files,
-    add_user,
-    is_banned
-)
+from database import search_files, count_files, add_user, is_banned
 from utils import clean_query, imdb_search
 from config import RESULTS_PER_PAGE
 
@@ -18,14 +13,13 @@ async def auto_filter(client, message):
 
     text = message.text.strip()
 
-    # ignore commands
+    # Ignore commands
     if text.startswith("/"):
         return
 
     user_id = message.from_user.id
     await add_user(user_id)
 
-    # ban check
     if await is_banned(user_id):
         return
 
@@ -38,10 +32,9 @@ async def auto_filter(client, message):
     if total == 0:
         return
 
-    page = 0
     files = await search_files(
         query=query,
-        skip=page * RESULTS_PER_PAGE,
+        skip=0,
         limit=RESULTS_PER_PAGE
     )
 
@@ -54,34 +47,17 @@ async def auto_filter(client, message):
             )
         ])
 
-    if total > RESULTS_PER_PAGE:
-        buttons.append([
-            InlineKeyboardButton(
-                "Next ➡️",
-                callback_data=f"page|{query}|1"
-            )
-        ])
-
-    imdb = await imdb_search(query)
-
     caption = f"🎬 **Results for:** `{query}`\n📁 Found: `{total}`"
 
+    imdb = await imdb_search(query)
     if imdb:
         caption += (
-            f"\n\n⭐ **IMDB:** {imdb.get('rating', 'N/A')}"
-            f"\n📝 {imdb.get('plot', 'No description')}"
+            f"\n\n⭐ IMDB: {imdb.get('rating', 'N/A')}"
+            f"\n📝 {imdb.get('plot', '')}"
         )
 
-    if imdb and imdb.get("poster") and imdb["poster"] != "N/A":
-        await message.reply_photo(
-            photo=imdb["poster"],
-            caption=caption,
-            reply_markup=InlineKeyboardMarkup(buttons),
-            quote=True
-        )
-    else:
-        await message.reply_text(
-            caption,
-            reply_markup=InlineKeyboardMarkup(buttons),
-            quote=True
-        )
+    await message.reply_text(
+        caption,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        quote=True
+    )
