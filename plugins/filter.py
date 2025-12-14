@@ -1,50 +1,62 @@
-import os
 import asyncio
-from pyrogram import Client, idle
-from aiohttp import web
+import aiohttp
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import Config
+from database import db
 
-routes = web.RouteTableDef()
-@routes.get("/", allow_head=True)
-async def root_route_handler(request):
-    return web.json_response({"status": "running"})
+async def get_short_link(link):
+    if not Config.SHORTENER_API: return link
+    try:
+        api_url = f"https://{Config.SHORTENER_URL}/api?api={Config.SHORTENER_API}&url={link}"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url) as resp:
+                data = await resp.json()
+                return data.get('shortenedUrl', link)
+    except: return link
 
-async def web_server():
-    web_app = web.Application(client_max_size=30000000)
-    web_app.add_routes(routes)
-    return web_app
+@Client.on_message(filters.text & (filters.private | filters.group))
+async def auto_filter(client, message):
+    if message.text.startswith("/"): return
 
-class Bot(Client):
-    def __init__(self):
-        super().__init__("ProBot", api_id=Config.API_ID, api_hash=Config.API_HASH, bot_token=Config.BOT_TOKEN, plugins=dict(root="plugins"))
+    status = await message.reply("⏳ **Raj find your query...**")
+    await asyncio.sleep(0.5) 
 
-    async def start(self):
-        await super().start()
-        print("✅ Raj HD Movies Bot Started!")
-        
-        # 🔥 PERMANENT FIX FOR PEER ID INVALID 🔥
+    # Log
+    try: await client.send_message(Config.LOG_CHANNEL, f"🔍 **Raj find your query....:** `{message.text}`\n👤: {message.from_user.mention}")
+    except: pass
+
+    files = await db.search_files(message.text)
+    
+    if not files:
+        # 🔥 FIX: Try-Except taaki crash na ho
         try:
-            print("🔄 Refreshing Channel Cache...")
-            # Hum zabardasti DB Channel ka data mangenge taaki cache ban jaye
-            await self.get_chat(Config.DB_CHANNEL)
-            print("✅ DB Channel Connected Successfully!")
-        except Exception as e:
-            print(f"❌ Failed to connect to DB Channel: {e}")
-            print("⚠️ Make sure Bot is Admin in DB Channel!")
+            return await status.edit("❌ **kichu pelam na.**")
+        except:
+            return await message.reply("❌ **kichu pelam na.**")
 
-    async def stop(self, *args):
-        await super().stop()
+    settings = await db.get_settings()
+    is_premium = await db.is_user_premium(message.from_user.id)
+    use_shortener = settings['shortener'] and not is_premium and Config.SHORTENER_API
 
-async def main():
-    bot = Bot()
-    app = web.AppRunner(await web_server())
-    await app.setup()
-    await web.TCPSite(app, "0.0.0.0", int(os.environ.get("PORT", 8080))).start()
-    await bot.start()
-    await idle()
-    await bot.stop()
+    btn = []
+    for file in files:
+        if use_shortener:
+            link = f"https://t.me/c/{str(Config.DB_CHANNEL).replace('-100', '')}/{file['file_id']}"
+            short = await get_short_link(link)
+            btn.append([InlineKeyboardButton(f"📁 {file['file_name']} (Ads)", url=short)])
+        else:
+            btn.append([InlineKeyboardButton(f"📁 {file['file_name']}", callback_data=f"file_{file['_id']}")])
 
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    if not is_premium:
+        btn.append([InlineKeyboardButton("💎 Buy Premium (No Ads)", callback_data="premium_price")])
+
+    try:
+        await status.edit(f"✅ **Found {len(files)} results:**", reply_markup=InlineKeyboardMarkup(btn))
+    except:
+        pass # MessageNotModified ignore
+
+@Client.on_message(filters.chat(Config.DB_CHANNEL) & (filters.document | filters.video))
+async def auto_save(client, message):
+    await db.save_file(message)
     
