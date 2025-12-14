@@ -4,8 +4,8 @@ from pyrogram.errors import FloodWait
 from config import Config
 from database import db
 
-# --- PROGRESS BAR FUNCTION ---
-def get_progress_bar(current, total):
+# --- PROGRESS BAR ---
+def get_progress(current, total):
     pct = (current / total) * 100
     filled = int(pct / 10)
     bar = '▓' * filled + '░' * (10 - filled)
@@ -13,68 +13,61 @@ def get_progress_bar(current, total):
 
 @Client.on_message(filters.command("index") & filters.user(Config.ADMINS))
 async def index(client, message):
-    # 1. Connection Check
-    status = await message.reply("🔄 **Connecting...**")
+    status = await message.reply("🔄 **Connecting to DB Channel...**")
+    
+    # 1. Check & Get Last ID
     try:
+        # Ek dummy message bhej kar check karenge
         last_msg = await client.send_message(Config.DB_CHANNEL, "🤖 Index Check")
         total_ids = last_msg.id
         await last_msg.delete()
     except Exception as e:
-        return await status.edit(f"❌ **Error:** I cannot connect to DB Channel.\nMake me **Admin** there.\nTrace: `{e}`")
+        return await status.edit(f"❌ **Connection Failed!**\n\nMake sure Bot is **Admin** in DB Channel.\nTrace: `{e}`")
 
-    await status.edit(f"✅ Connection OK!\n📥 Total Messages: `{total_ids}`\n🚀 **Starting Fast Index...**")
-    
-    # 2. Indexing Loop
+    await status.edit(f"✅ Connection OK!\n📥 Total Messages to Scan: `{total_ids}`\n🚀 **Starting Index...**")
+
+    # 2. Start Loop (New Method: ID Iterator)
     current_id = total_ids
     saved_count = 0
-    batch_size = 50  # Chota batch taaki update fast ho
+    batch_size = 50 # Chota batch taaki fast update ho
 
     while current_id > 0:
         try:
-            # Batch calculate karein
-            start = current_id
-            end = max(0, current_id - batch_size)
-            ids = list(range(start, end, -1))
-
-            # Messages fetch karein
+            # Batch of 50 IDs
+            ids = list(range(current_id, max(0, current_id - batch_size), -1))
+            
+            # Method change: get_chat_history HATAYA -> get_messages LAGAYA
             messages = await client.get_messages(Config.DB_CHANNEL, ids)
 
             for msg in messages:
-                # Agar message empty nahi hai aur File hai
                 if msg and not msg.empty and (msg.document or msg.video):
                     if await db.save_file(msg):
                         saved_count += 1
-
-            # Agla batch
+            
             current_id -= batch_size
 
-            # Status Update (Har 100 message ya 2 batch ke baad)
+            # Update Progress every 100 messages
             if current_id % 100 == 0:
-                percent = get_progress_bar(total_ids - current_id, total_ids)
+                bar = get_progress(total_ids - current_id, total_ids)
                 try:
                     await status.edit(
-                        f"🔄 **Indexing...**\n"
-                        f"{percent}\n"
-                        f"📂 Saved: `{saved_count}`\n"
+                        f"🔄 **Indexing in Progress...**\n"
+                        f"{bar}\n\n"
+                        f"📂 Saved: `{saved_count}` files\n"
                         f"🔍 Scanning ID: `{current_id}`"
                     )
-                except:
-                    pass # Edit error ignore karein
-            
-            # Koyeb Log (Taaki pata chale bot zinda hai)
-            print(f"Scanned till ID: {current_id} | Saved: {saved_count}")
+                except: pass
 
         except FloodWait as e:
-            # 🛑 Agar Telegram roke, to user ko batao
-            print(f"⚠️ FloodWait: Sleeping {e.value}s")
+            # 🛑 Agar Telegram roke, to User ko batao
             try:
-                await status.edit(f"😴 **Telegram told me to sleep for {e.value}s...**\n(Don't worry, I will resume automatically)")
+                await status.edit(f"😴 **Telegram High Traffic!**\nSleeping for {e.value} seconds...\n(Don't worry, I will resume automatically)")
             except: pass
-            await asyncio.sleep(e.value)
+            await asyncio.sleep(e.value) # So jao
         
         except Exception as e:
-            print(f"Error skipping batch: {e}")
-            current_id -= batch_size # Error aaye to bhi aage badho, ruko mat
+            print(f"Skipping Batch: {e}")
+            current_id -= batch_size
 
     await status.edit(f"✅ **Indexing Completed!**\n\n💾 Total Files Saved: `{saved_count}`\n🗑 Scanned IDs: `{total_ids}`")
 
