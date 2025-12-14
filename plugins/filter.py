@@ -5,6 +5,12 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import Config
 from database import db
 
+async def send_log(client, text):
+    try:
+        await client.send_message(Config.LOG_CHANNEL, text)
+    except:
+        pass
+
 async def get_short_link(link):
     if not Config.SHORTENER_API:
         return link
@@ -22,11 +28,18 @@ async def auto_filter(client, message):
     if message.text.startswith("/"):
         return
 
-    status = await message.reply("⏳ Searching...")
-    await asyncio.sleep(0.5)
+    await send_log(
+        client,
+        f"🔍 SEARCH\n"
+        f"👤 {message.from_user.id}\n"
+        f"📝 {message.text}"
+    )
 
+    status = await message.reply("⏳ Searching...")
     files = await db.search_files(message.text)
+
     if not files:
+        await send_log(client, "❌ No results found")
         return await status.edit("❌ No results found.")
 
     is_premium = await db.is_user_premium(message.from_user.id)
@@ -40,23 +53,41 @@ async def auto_filter(client, message):
             short = await get_short_link(link)
             buttons.append([InlineKeyboardButton(f"📁 {file['file_name']}", url=short)])
         else:
-            buttons.append([InlineKeyboardButton(
-                f"📁 {file['file_name']}",
-                callback_data=f"file_{file['_id']}"
-            )])
+            buttons.append([
+                InlineKeyboardButton(
+                    f"📁 {file['file_name']}",
+                    callback_data=f"file_{file['_id']}"
+                )
+            ])
 
     if not is_premium:
-        buttons.append([InlineKeyboardButton("💎 Buy Premium", callback_data="premium_price")])
+        buttons.append([
+            InlineKeyboardButton("💎 Buy Premium", callback_data="premium_price")
+        ])
 
     await status.edit(
         f"✅ Found {len(files)} results:",
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
-# 🔥 PEER RESOLVE FIX (THIS SOLVES YOUR ERROR)
+    await send_log(
+        client,
+        f"✅ RESULTS SENT\n"
+        f"👤 {message.from_user.id}\n"
+        f"🎬 {len(files)} files"
+    )
+
 @Client.on_message(filters.channel & (filters.document | filters.video))
 async def auto_save(client, message):
     if message.chat.id != Config.DB_CHANNEL:
         return
-    await db.save_file(message)
-    
+
+    saved = await db.save_file(message)
+    if saved:
+        await send_log(
+            client,
+            f"📥 FILE SAVED\n"
+            f"📄 {message.caption or 'No Caption'}\n"
+            f"🆔 {message.id}"
+        )
+        
