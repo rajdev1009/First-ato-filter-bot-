@@ -10,7 +10,7 @@ class Database:
         self.files = self.db.files
         self.settings = self.db.settings
 
-    # --- User & Premium ---
+    # --- User Management ---
     async def add_user(self, id, name):
         user = await self.col.find_one({'id': id})
         if not user:
@@ -22,7 +22,7 @@ class Database:
         user = await self.col.find_one({'id': id})
         if user and user.get('is_premium'):
             if user.get('expiry') and user['expiry'] < datetime.datetime.now():
-                await self.remove_premium(id) # Smart Atomic Cut
+                await self.remove_premium(id) # Expiry Check
                 return False
             return True
         return False
@@ -34,17 +34,20 @@ class Database:
     async def remove_premium(self, id):
         await self.col.update_one({'id': id}, {'$set': {'is_premium': False, 'expiry': None}})
 
-    # --- Files (No Duplicates) ---
+    # --- File Management ---
     async def save_file(self, message):
         try:
             file_id = message.id
+            # Duplicate Check
             if await self.files.find_one({'file_id': file_id}):
-                return False # Duplicate found
+                return False 
             
             media = message.document or message.video or message.audio
             file_name = message.caption or (media.file_name if media else "Unknown")
-            # Create Direct Link
-            link = f"https://t.me/c/{str(Config.DB_CHANNEL).replace('-100', '')}/{message.id}"
+            
+            # Direct Link Logic
+            channel_id_str = str(Config.DB_CHANNEL).replace("-100", "")
+            link = f"https://t.me/c/{channel_id_str}/{message.id}"
             
             await self.files.insert_one({
                 'file_name': file_name.lower(),
@@ -65,7 +68,7 @@ class Database:
     async def get_settings(self):
         settings = await self.settings.find_one({'id': 'master'})
         if not settings:
-            default = {'shortener': True, 'pm_search': True}
+            default = {'shortener': False, 'pm_search': True}
             await self.settings.insert_one({'id': 'master', **default})
             return default
         return settings
@@ -73,4 +76,5 @@ class Database:
     async def update_setting(self, key, value):
         await self.settings.update_one({'id': 'master'}, {'$set': {key: value}}, upsert=True)
 
-db = Database(Config.MONGO_DB_URI, "Raj_Dev_Bot")
+# No Space in Name
+db = Database(Config.MONGO_DB_URI, "Raj_HD_Bot")
