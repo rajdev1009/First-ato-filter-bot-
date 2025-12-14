@@ -1,6 +1,6 @@
 import motor.motor_asyncio
 import datetime
-from bson.objectid import ObjectId  # 👈 यह लाइन बहुत जरुरी है
+from bson.objectid import ObjectId
 from config import Config
 
 class Database:
@@ -35,7 +35,7 @@ class Database:
     async def remove_premium(self, id):
         await self.col.update_one({'id': id}, {'$set': {'is_premium': False, 'expiry': None}})
 
-    # --- File Management (Fixed for Direct Send) ---
+    # --- File Management ---
     async def save_file(self, message):
         try:
             file_id = message.id
@@ -47,7 +47,7 @@ class Database:
             
             await self.files.insert_one({
                 'file_name': file_name.lower(),
-                'file_id': file_id, # Message ID in DB Channel
+                'file_id': file_id,
                 'caption': message.caption,
                 'file_type': 'video' if message.video else 'document'
             })
@@ -58,10 +58,8 @@ class Database:
 
     async def search_files(self, query):
         regex = {"$regex": query, "$options": "i"}
-        # हम _id भी मांगेंगे ताकि बटन में डाल सकें
         return await self.files.find({"file_name": regex}).limit(10).to_list(length=10)
 
-    # 👇 यह नया फंक्शन है फाइल भेजने के लिए
     async def get_file(self, _id):
         try:
             return await self.files.find_one({"_id": ObjectId(_id)})
