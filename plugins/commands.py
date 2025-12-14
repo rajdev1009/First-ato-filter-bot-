@@ -1,57 +1,64 @@
+import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import Config
 from database import db
 from script import Script
 
+async def auto_delete(msg, delay):
+    await asyncio.sleep(delay)
+    try: await msg.delete()
+    except: pass
+
 @Client.on_message(filters.command("start") & filters.private)
 async def start(client, message):
     await db.add_user(message.from_user.id, message.from_user.first_name)
-    text = Script.START_TXT.format(mention=message.from_user.mention)
-    buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔥 Premium Price", callback_data="premium_price"),
-         InlineKeyboardButton("🎥 Movie Group", url="https://t.me/+mgQzW_pjxT1hODI1")],
-        [InlineKeyboardButton("⚙ Settings", callback_data="settings"),
-         InlineKeyboardButton("🆘 Help", callback_data="help")]
-    ])
-    await message.reply_text(text, reply_markup=buttons)
+    try: await client.send_message(Config.LOG_CHANNEL, f"#NEW_USER: {message.from_user.mention}")
+    except: pass
+    
+    await message.reply_text(
+        Script.START_TXT.format(mention=message.from_user.mention),
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("📢 Updates", url=Config.UPDATE_CHANNEL_LINK), InlineKeyboardButton("🎥 Group", url=Config.MOVIE_GROUP_LINK)],
+            [InlineKeyboardButton("🆘 Help", callback_data="help")]
+        ])
+    )
 
 @Client.on_callback_query()
 async def cb_handler(client, callback):
     data = callback.data
     
-    # 👇👇👇 FILE SENDING LOGIC (Ye Naya Hai) 👇👇👇
     if data.startswith("file_"):
         try:
-            file_mongo_id = data.split("_")[1]
-            file_info = await db.get_file(file_mongo_id)
-            
-            if not file_info:
-                return await callback.answer("File not found!", show_alert=True)
-
-            # Check Premium for Shortener (Optional Logic here)
-            # अभी हम सीधा फाइल भेज रहे हैं जैसा आपने मांगा
+            file_id = data.split("_")[1]
+            file = await db.get_file(file_id)
+            if not file: return await callback.answer("File Not Found", show_alert=True)
             
             await callback.answer("📂 Sending File...", show_alert=False)
             
-            # DB Channel se User ko file Copy karein
-            await client.copy_message(
-                chat_id=callback.from_user.id,
-                from_chat_id=Config.DB_CHANNEL,
-                message_id=file_info['file_id'],
-                caption=f"🎥 **{file_info['file_name']}**\n\n✅ Join: t.me/+mgQzW_pjxT1hODI1"
-            )
-        except Exception as e:
-            print(f"Send Error: {e}")
-            await callback.answer("Error sending file. Make sure Bot is Admin in DB Channel.", show_alert=True)
+            caption = (f"🎬 **{file['file_name']}**\n\n"
+                       f"⚠️ *Auto Delete in 15 Mins*\n"
+                       f"🤖 **Bot:** @{client.me.username}")
             
-    # --- Other Buttons ---
-    elif data == "premium_price":
-        # CONTACT ADMIN BUTTON
-        btn = [[InlineKeyboardButton("👤 Contact Admin", url="https://t.me/raj_dev_01"), InlineKeyboardButton("🔙 Back", callback_data="start")]]
-        await callback.message.edit_text(Script.PREMIUM_TXT, reply_markup=InlineKeyboardMarkup(btn))
+            btns = InlineKeyboardMarkup([[InlineKeyboardButton("📢 Join Update Channel", url=Config.UPDATE_CHANNEL_LINK)]])
+            
+            sent = await client.copy_message(
+                callback.message.chat.id, Config.DB_CHANNEL, file['file_id'], caption=caption, reply_markup=btns
+            )
+            
+            # Log File Send
+            try: await client.send_message(Config.LOG_CHANNEL, f"📤 **File Sent**\n👤: {callback.from_user.mention}\n📂: `{file['file_name']}`")
+            except: pass
+            
+            # Auto Delete (900s = 15 Mins)
+            asyncio.create_task(auto_delete(sent, 900))
+            
+        except Exception as e:
+            print(e)
+            await callback.answer("Error! Bot needs Admin rights.", show_alert=True)
+
     elif data == "help":
-        await callback.message.edit_text(Script.HELP_TXT, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="start")]]))
+        await callback.message.edit_text(Script.HELP_TXT, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Back", callback_data="start")]]))
     elif data == "start":
         await callback.message.edit_text(Script.START_TXT.format(mention=callback.from_user.mention))
         
