@@ -1,34 +1,33 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from config import MONGO_URI
+import os
+
+MONGO_URI = os.getenv("MONGO_URI")
+DB_NAME = os.getenv("DB_NAME", "autofilter")
 
 client = AsyncIOMotorClient(MONGO_URI)
-db = client["autofilter"]
+db = client[DB_NAME]
 
-files = db.files
-users = db.users
-banned = db.banned
+files_col = db.files
 
 
-async def add_user(user_id):
-    await users.update_one(
-        {"_id": user_id},
-        {"$set": {"_id": user_id}},
-        upsert=True
-    )
+async def add_file(file_id, file_name, file_size, caption, file_type):
+    data = {
+        "file_id": file_id,
+        "file_name": file_name.lower(),
+        "file_size": file_size,
+        "caption": caption,
+        "file_type": file_type
+    }
+    await files_col.insert_one(data)
 
 
-async def is_banned(user_id):
-    return await banned.find_one({"_id": user_id}) is not None
-
-
-async def count_files(query):
-    return await files.count_documents(
+async def search_files(query, limit=10):
+    cursor = files_col.find(
         {"file_name": {"$regex": query, "$options": "i"}}
-    )
+    ).limit(limit)
 
-
-async def search_files(query, skip, limit):
-    cursor = files.find(
-        {"file_name": {"$regex": query, "$options": "i"}}
-    ).skip(skip).limit(limit)
     return await cursor.to_list(length=limit)
+
+
+async def get_files_count():
+    return await files_col.count_documents({})
