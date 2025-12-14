@@ -10,14 +10,14 @@
 
 ##raj_hdmovies_bot/
 │
-├── main.py                # Bot startup (ProBot)
-├── config.py              # Config + env
-├── database.py            # MongoDB async logic
-├── filter.py              # Auto filter + save + logs
-├── admin.py               # Admin commands (premium add)
-├── commands.py            # Start/help/premium
-├── indexer.py             # USER ACCOUNT indexing script
-├── requirements.txt       # Dependencies
+├── main.py                
+├── config.py              
+├── database.py           
+├── filter.py              
+├── admin.py               
+├── commands.py            
+├── indexer.py             
+├── requirements.txt       
 └── plugins/
     ├── filter.py
     ├── admin.py
