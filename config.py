@@ -18,7 +18,7 @@ class Config:
     # Links
     UPDATE_CHANNEL_LINK = "https://t.me/+YZ7qQ1Ahx-M1MDdl"
     MOVIE_GROUP_LINK = "https://t.me/+mgQzW_pjxT1hODI1"
-    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "@raj_dev_01") 
+    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "raj_dev_01") 
 
     # Admin
     ADMINS = [int(x) for x in os.environ.get("ADMINS", "0").split()]
