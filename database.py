@@ -1,69 +1,68 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
+import motor.motor_asyncio
+import datetime
+from bson.objectid import ObjectId
+from config import Config
 
-MONGO_URI = os.getenv("MONGO_URI")
-DB_NAME = os.getenv("DB_NAME", "autofilter")
+class Database:
+    def __init__(self, uri, database_name):
+        self._client = motor.motor_asyncio.AsyncIOMotorClient(uri)
+        self.db = self._client[database_name]
+        self.col = self.db.users
+        self.files = self.db.files
+        self.settings = self.db.settings
 
-client = AsyncIOMotorClient(MONGO_URI)
-db = client[DB_NAME]
+    async def add_user(self, id, name):
+        if not await self.col.find_one({'id': id}):
+            await self.col.insert_one({'id': id, 'name': name, 'is_premium': False})
 
-files_col = db.files
-users_col = db.users
-settings_col = db.settings
-bans_col = db.bans
+    async def is_user_premium(self, id):
+        user = await self.col.find_one({'id': id})
+        if user and user.get('is_premium'):
+            if user.get('expiry') and user['expiry'] < datetime.datetime.now():
+                await self.col.update_one({'id': id}, {'$set': {'is_premium': False}})
+                return False
+            return True
+        return False
 
+    async def add_premium(self, id, days):
+        expiry = datetime.datetime.now() + datetime.timedelta(days=int(days))
+        await self.col.update_one({'id': id}, {'$set': {'is_premium': True, 'expiry': expiry}}, upsert=True)
 
-# ───────────── FILES ─────────────
-async def add_file(file_data: dict):
-    await files_col.insert_one(file_data)
+    async def save_file(self, message):
+        try:
+            file_id = message.id
+            if await self.files.find_one({'file_id': file_id}): return False 
+            
+            media = message.document or message.video or message.audio
+            if not media: return False
+            file_name = message.caption or media.file_name or "Unknown"
+            
+            await self.files.insert_one({
+                'file_name': file_name.lower(),
+                'file_id': file_id,
+                'caption': message.caption,
+                'file_type': 'video' if message.video else 'document'
+            })
+            return True
+        except: return False
 
+    async def search_files(self, query):
+        regex = {"$regex": query, "$options": "i"}
+        return await self.files.find({"file_name": regex}).limit(10).to_list(length=10)
 
-async def search_files(query, limit=10):
-    cursor = files_col.find(
-        {"file_name": {"$regex": query, "$options": "i"}}
-    ).limit(limit)
-    return await cursor.to_list(length=limit)
+    async def get_file(self, _id):
+        try:
+            return await self.files.find_one({"_id": ObjectId(_id)})
+        except: return None
 
+    async def get_settings(self):
+        settings = await self.settings.find_one({'id': 'master'})
+        if not settings:
+            await self.settings.insert_one({'id': 'master', 'shortener': False})
+            return {'shortener': False}
+        return settings
 
-# ───────────── USERS ─────────────
-async def add_user(user_id: int):
-    if not await users_col.find_one({"_id": user_id}):
-        await users_col.insert_one({"_id": user_id})
+    async def update_shortener(self, status):
+        await self.settings.update_one({'id': 'master'}, {'$set': {'shortener': status}}, upsert=True)
 
-
-# ───────────── BANS ─────────────
-async def ban_user(user_id: int):
-    await bans_col.update_one(
-        {"_id": user_id},
-        {"$set": {"_id": user_id}},
-        upsert=True
-    )
-
-
-async def unban_user(user_id: int):
-    await bans_col.delete_one({"_id": user_id})
-
-
-async def is_banned(user_id: int):
-    return bool(await bans_col.find_one({"_id": user_id}))
-
-
-# ───────────── STATS ─────────────
-async def get_stats():
-    users = await users_col.count_documents({})
-    files = await files_col.count_documents({})
-    return {"users": users, "files": files}
-
-
-# ───────────── SHORTENER ─────────────
-async def set_shortener(value: bool):
-    await settings_col.update_one(
-        {"_id": "shortener"},
-        {"$set": {"value": value}},
-        upsert=True
-    )
-
-
-async def get_shortener():
-    data = await settings_col.find_one({"_id": "shortener"})
-    return data["value"] if data else False
+db = Database(Config.MONGO_DB_URI, "Raj_Pro_Bot_Final")
