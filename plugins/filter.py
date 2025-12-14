@@ -1,62 +1,89 @@
-import asyncio
-import aiohttp
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from config import Config
-from database import db
 
-async def get_short_link(link):
-    if not Config.SHORTENER_API: return link
-    try:
-        api_url = f"https://{Config.SHORTENER_URL}/api?api={Config.SHORTENER_API}&url={link}"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url) as resp:
-                data = await resp.json()
-                return data.get('shortenedUrl', link)
-    except: return link
+from database import (
+    search_files,
+    count_files,
+    add_user,
+    is_banned
+)
+from utils import clean_query, imdb_search
+from config import RESULTS_PER_PAGE
 
-@Client.on_message(filters.text & (filters.private | filters.group))
+
+@Client.on_message(
+    filters.text &
+    ~filters.command &
+    ~filters.edited
+)
 async def auto_filter(client, message):
-    if message.text.startswith("/"): return
+    if not message.from_user:
+        return
 
-    status = await message.reply("⏳ **Raj find your query...**")
-    await asyncio.sleep(0.5) 
+    user_id = message.from_user.id
+    await add_user(user_id)
 
-    # Log
-    try: await client.send_message(Config.LOG_CHANNEL, f"🔍 **Raj find your query....:** `{message.text}`\n👤: {message.from_user.mention}")
-    except: pass
+    # ban check
+    if await is_banned(user_id):
+        return
 
-    files = await db.search_files(message.text)
-    
-    if not files:
-        # 🔥 FIX: Try-Except taaki crash na ho
-        try:
-            return await status.edit("❌ **kichu pelam na.**")
-        except:
-            return await message.reply("❌ **kichu pelam na.**")
+    # clean movie name
+    query = clean_query(message.text)
 
-    settings = await db.get_settings()
-    is_premium = await db.is_user_premium(message.from_user.id)
-    use_shortener = settings['shortener'] and not is_premium and Config.SHORTENER_API
+    # ignore very small queries
+    if len(query) < 3:
+        return
 
-    btn = []
-    for file in files:
-        if use_shortener:
-            link = f"https://t.me/c/{str(Config.DB_CHANNEL).replace('-100', '')}/{file['file_id']}"
-            short = await get_short_link(link)
-            btn.append([InlineKeyboardButton(f"📁 {file['file_name']} (Ads)", url=short)])
-        else:
-            btn.append([InlineKeyboardButton(f"📁 {file['file_name']}", callback_data=f"file_{file['_id']}")])
+    total = await count_files(query)
+    if total == 0:
+        return
 
-    if not is_premium:
-        btn.append([InlineKeyboardButton("💎 Buy Premium (No Ads)", callback_data="premium_price")])
+    page = 0
+    files = await search_files(
+        query=query,
+        skip=page * RESULTS_PER_PAGE,
+        limit=RESULTS_PER_PAGE
+    )
 
-    try:
-        await status.edit(f"✅ **Found {len(files)} results:**", reply_markup=InlineKeyboardMarkup(btn))
-    except:
-        pass # MessageNotModified ignore
+    buttons = []
+    for f in files:
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"📁 {f['file_name']}",
+                callback_data=f"send|{f['file_id']}"
+            )
+        ])
 
-@Client.on_message(filters.chat(Config.DB_CHANNEL) & (filters.document | filters.video))
-async def auto_save(client, message):
-    await db.save_file(message)
-    
+    # pagination
+    if total > RESULTS_PER_PAGE:
+        buttons.append([
+            InlineKeyboardButton(
+                "Next ➡️",
+                callback_data=f"page|{query}|1"
+            )
+        ])
+
+    # imdb info
+    imdb = await imdb_search(query)
+
+    caption = f"🎬 **Results for:** `{query}`\n📁 Found: `{total}`"
+    if imdb:
+        caption += (
+            f"\n\n⭐ **IMDB:** {imdb['rating']}"
+            f"\n📝 {imdb['plot']}"
+        )
+
+    # send result
+    if imdb and imdb.get("poster") and imdb["poster"] != "N/A":
+        await message.reply_photo(
+            photo=imdb["poster"],
+            caption=caption,
+            reply_markup=InlineKeyboardMarkup(buttons),
+            quote=True
+        )
+    else:
+        await message.reply_text(
+            caption,
+            reply_markup=InlineKeyboardMarkup(buttons),
+            quote=True
+        )
