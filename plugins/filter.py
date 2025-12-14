@@ -11,15 +11,14 @@ from utils import clean_query, imdb_search
 from config import RESULTS_PER_PAGE
 
 
-@Client.on_message(filters.text & ~filters.edited)
+@Client.on_message(filters.text)
 async def auto_filter(client, message):
-
     if not message.from_user:
         return
 
     text = message.text.strip()
 
-    # ✅ Ignore commands SAFELY
+    # ignore commands
     if text.startswith("/"):
         return
 
@@ -30,10 +29,8 @@ async def auto_filter(client, message):
     if await is_banned(user_id):
         return
 
-    # clean movie name
     query = clean_query(text)
 
-    # ignore very small queries
     if len(query) < 3:
         return
 
@@ -57,7 +54,6 @@ async def auto_filter(client, message):
             )
         ])
 
-    # pagination
     if total > RESULTS_PER_PAGE:
         buttons.append([
             InlineKeyboardButton(
@@ -66,17 +62,16 @@ async def auto_filter(client, message):
             )
         ])
 
-    # imdb info
     imdb = await imdb_search(query)
 
     caption = f"🎬 **Results for:** `{query}`\n📁 Found: `{total}`"
+
     if imdb:
         caption += (
             f"\n\n⭐ **IMDB:** {imdb.get('rating', 'N/A')}"
-            f"\n📝 {imdb.get('plot', 'Not Available')}"
+            f"\n📝 {imdb.get('plot', 'No description')}"
         )
 
-    # send result
     if imdb and imdb.get("poster") and imdb["poster"] != "N/A":
         await message.reply_photo(
             photo=imdb["poster"],
