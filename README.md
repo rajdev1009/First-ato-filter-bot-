@@ -3,7 +3,7 @@
 </h1>
 
 <p align="center">
-  <img src="thumbnail.jpg" alt="Raj Thumbnail" width="100%">
+  <img src="rajdev785.jpg" alt="Raj Thumbnail" width="100%">
 </p>
 
 <hr>
