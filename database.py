@@ -73,4 +73,4 @@ class Database:
     async def update_setting(self, key, value):
         await self.settings.update_one({'id': 'master'}, {'$set': {key: value}}, upsert=True)
 
-db = Database(Config.MONGO_DB_URI, "Raj dev")
+db = Database(Config.MONGO_DB_URI, "Raj_Dev_Bot")
