@@ -20,14 +20,14 @@ async def auto_save(client, message):
 
 @Client.on_message(filters.text & filters.private)
 async def auto_filter(client, message):
-    if message.text.startswith("/"): return
-    
-    settings = await db.get_settings()
-    if not settings['pm_search'] and message.from_user.id not in Config.ADMINS:
-        return await message.reply("PM Search OFF.")
+    # 🛑 CRITICAL FIX: Ignore commands
+    if message.text.startswith("/"):
+        return
 
+    settings = await db.get_settings()
     files = await db.search_files(message.text)
-    if not files: return await message.reply("No results found.")
+    if not files:
+        return await message.reply("No results found.")
 
     is_premium = await db.is_user_premium(message.from_user.id)
     use_shortener = settings['shortener'] and not is_premium
