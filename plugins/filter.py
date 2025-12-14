@@ -11,13 +11,16 @@ from utils import clean_query, imdb_search
 from config import RESULTS_PER_PAGE
 
 
-@Client.on_message(
-    filters.text &
-    ~filters.command &
-    ~filters.edited
-)
+@Client.on_message(filters.text & ~filters.edited)
 async def auto_filter(client, message):
+
     if not message.from_user:
+        return
+
+    text = message.text.strip()
+
+    # ✅ Ignore commands SAFELY
+    if text.startswith("/"):
         return
 
     user_id = message.from_user.id
@@ -28,7 +31,7 @@ async def auto_filter(client, message):
         return
 
     # clean movie name
-    query = clean_query(message.text)
+    query = clean_query(text)
 
     # ignore very small queries
     if len(query) < 3:
@@ -69,8 +72,8 @@ async def auto_filter(client, message):
     caption = f"🎬 **Results for:** `{query}`\n📁 Found: `{total}`"
     if imdb:
         caption += (
-            f"\n\n⭐ **IMDB:** {imdb['rating']}"
-            f"\n📝 {imdb['plot']}"
+            f"\n\n⭐ **IMDB:** {imdb.get('rating', 'N/A')}"
+            f"\n📝 {imdb.get('plot', 'Not Available')}"
         )
 
     # send result
